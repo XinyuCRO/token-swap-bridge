@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "forge test --fork-url $L1_RPC_URL -vv",
+    "test": "forge test --fork-url $L1_RPC_URL --etherscan-api-key $ETHERSCAN_API_KEY -vvv",
     "test-env": "dotenv-run-script test"
   },
   "repository": {

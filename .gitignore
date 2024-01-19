@@ -29,3 +29,5 @@ node_modules
 /coverage
 /coverage.json
 /cache_hardhat
+
+/.deps
