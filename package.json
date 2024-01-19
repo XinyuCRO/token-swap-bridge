@@ -1,0 +1,32 @@
+{
+  "name": "token-swap-bridge",
+  "version": "1.0.0",
+  "description": "POC for token swap bridge, it can achieve the following:",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "forge test --fork-url $L1_RPC_URL -vv",
+    "test-env": "dotenv-run-script test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XinyuCRO/token-swap-bridge.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/XinyuCRO/token-swap-bridge/issues"
+  },
+  "homepage": "https://github.com/XinyuCRO/token-swap-bridge#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-foundry": "^1.1.1",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomiclabs/hardhat-solpp": "^2.0.1",
+    "dotenv": "^16.3.1",
+    "dotenv-run-script": "^0.4.1",
+    "hardhat": "^2.19.4"
+  }
+}
