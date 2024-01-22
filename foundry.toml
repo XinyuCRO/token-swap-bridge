@@ -2,6 +2,7 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+sender = "0x85814a07917477B2Ad9dbc8DA1DF5850b54173Fe"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 remappings = [

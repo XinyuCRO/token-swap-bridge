@@ -52,16 +52,9 @@ contract TokenSwapBridgeL1Test is Test {
 
     function test_deposit() public {
 
-        vm.prank(owner);
+        vm.startPrank(owner);
         baseToken.approve(address(CONTRACTS_DIAMOND_PROXY_ADDR), 100 ether);
-        vm.prank(owner);
         testToken.approve(address(swapBridgeL1), 100 ether);
-        vm.prank(owner);
-        console.log("allowance of base token: ", baseToken.allowance(owner, address(CONTRACTS_DIAMOND_PROXY_ADDR)));
-        vm.prank(owner);
-        console.log("allowance of test token: ", testToken.allowance(owner, address(swapBridgeL1)));
-
-        vm.prank(owner);
         bytes32 l2txHash = swapBridgeL1.deposit(
             owner,
             address(testToken),
@@ -72,7 +65,7 @@ contract TokenSwapBridgeL1Test is Test {
             0.1 ether
         );
         console.logBytes32(l2txHash);
-        // vm.stopPrank();
+        vm.stopPrank();
     }
 
 }
