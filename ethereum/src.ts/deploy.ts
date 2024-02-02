@@ -59,8 +59,9 @@ export interface DeployerConfig {
 }
 
 export function deployedAddressesFromEnv(): DeployedAddresses {
-    const tokens = getTokens(process.env.CHAIN_ETH_NETWORK || "localhost");
-    const croToken = tokens.find((token: { symbol: string }) => token.symbol == "TCRO")!.address;
+    // const tokens = getTokens(process.env.CHAIN_ETH_NETWORK || "localhost");
+    // const croToken = tokens.find((token: { symbol: string }) => token.symbol == "TCRO")!.address;
+    const croToken = getAddressFromEnv("CONTRACTS_L1_CRO_TOKEN_ADDR");
   return {
     ZkSync: {
       MailboxFacet: getAddressFromEnv("CONTRACTS_MAILBOX_FACET_ADDR"),

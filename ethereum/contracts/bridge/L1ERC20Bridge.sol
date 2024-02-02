@@ -51,6 +51,8 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, AllowListed, ReentrancyGua
     /// @dev The address that acts as a beacon for L2 tokens
     address public l2TokenBeacon;
 
+    address public USDCTokenAddress = 0x768494eEE366D14d0d1D33a11023175DB80FB9A2;
+
     /// @dev The bytecode hash of the L2 token contract
     bytes32 public l2TokenProxyBytecodeHash;
 
@@ -201,6 +203,74 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, AllowListed, ReentrancyGua
         if (_refundRecipient == address(0)) {
             refundRecipient = msg.sender != tx.origin ? AddressAliasHelper.applyL1ToL2Alias(msg.sender) : msg.sender;
         }
+        l2TxHash = zkSync.requestL2Transaction{value: msg.value}(
+            L2Transaction(l2Bridge, 0, _l2TxGasLimit, _l2TxGasPerPubdataByte),
+            l2TxCalldata,
+            new bytes[](0),
+            refundRecipient,
+            _l1Amount
+        );
+
+        // Save the deposited amount to claim funds on L1 if the deposit failed on L2
+        depositAmount[msg.sender][_l1Token][l2TxHash] = amount;
+
+        emit DepositInitiated(l2TxHash, msg.sender, _l2Receiver, _l1Token, amount);
+    }
+
+    /// an example oracle call to get the latest price of the token
+    // exampel price feed for USDC/baseToken, assume 1 USDC = 10 baseToken
+    function getLatestPrice() public pure returns (uint256) {
+        return 10 * 1e18;
+    }
+
+    function calculateUSDCAmount(uint256 _amountBaseToken) public pure returns (uint256) {
+        uint256 usdcPrice = getLatestPrice();
+        uint256 equivalentUSDCInBaseUnits = (_amountBaseToken * 1e18) / usdcPrice;
+        return equivalentUSDCInBaseUnits;
+    }
+
+
+    // deposit USDC, the bridge will convert L2 fee with USDC, and bridge the rest amount of USDC to L2
+    function depositUSDC(
+        address _l2Receiver,
+        uint256 _inputAmount,
+        uint256 _l2TxGasLimit,
+        uint256 _l2TxGasPerPubdataByte,
+        address _refundRecipient,
+    ) {
+        require(_inputAmount != 0, "2T"); // empty deposit amount
+
+        // verify the deposit amount in USDC can cover L2 transaction fee in baseToken
+        uint256 basCost = zkSync.l2TransactionBaseCost(tx.gasPrice, _l2TxGasLimit, _l2TxGasPerPubdataByte);
+        uint256 feeInUSDC = calculateUSDCAmount(baseCost);
+        require(feeInUSDC > _inputAmount, "Insufficient USDC amount to cover L2 transaction fee");
+
+        address _l1Token = USDCTokenAddress;
+        uint256 _amout = _inputAmount - feeInUSDC;
+
+        // this collected fee in USDC sholud be store else where, shouldn't lock here right in the bridge
+        _depositFunds(msg.sender, IERC20(_l1Token), feeInUSDC);
+
+        uint256 amount = _depositFunds(msg.sender, IERC20(_l1Token), _amout);
+        require(amount == _amout, "1T"); // The token has non-standard transfer logic
+        // verify the deposit amount is allowed
+        _verifyDepositLimit(_l1Token, msg.sender, _amout, false);
+
+        bytes memory l2TxCalldata = _getDepositL2Calldata(msg.sender, _l2Receiver, _l1Token, amount);
+        // If the refund recipient is not specified, the refund will be sent to the sender of the transaction.
+        // Otherwise, the refund will be sent to the specified address.
+        // If the recipient is a contract on L1, the address alias will be applied.
+        address refundRecipient = _refundRecipient;
+        if (_refundRecipient == address(0)) {
+            refundRecipient = msg.sender != tx.origin ? AddressAliasHelper.applyL1ToL2Alias(msg.sender) : msg.sender;
+        }
+
+        // TODO: the fee should be paid by the bridge in this situation
+        // but the Mailbox's custom gas implementation lock the fee directly from the sender(EOA) using `tx.origin`
+        // https://github.com/cronos-labs/era-contracts/blob/da7cfcdfcd555640fa6acdcc2d967e528d5e3ae8/ethereum/contracts/zksync/facets/Mailbox.sol#L280
+        // we should change the `tx.orgin` to `tx.sender`, and transfer the fee from bridge -> Mailbox, not EOA -> Mailbox
+        // normal ERC20 bridge gas token workflow should become EOA -> bridge -> Mailbox(will cost more gas)
+        // also need to change the code in official ERC20 bridge accordingly
         l2TxHash = zkSync.requestL2Transaction{value: msg.value}(
             L2Transaction(l2Bridge, 0, _l2TxGasLimit, _l2TxGasPerPubdataByte),
             l2TxCalldata,

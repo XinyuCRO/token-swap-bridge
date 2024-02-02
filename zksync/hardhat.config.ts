@@ -30,6 +30,13 @@ export default {
       ethNetwork: null,
       zksync: true,
     },
+    zkEvmTestnet: {
+      url: "https://rpc-zkevm-t0.cronos.org",
+      ethNetwork: "sepolia",
+      zksync: true,
+      // contract verification endpoint
+      verifyURL: "https://rpc-zkevm-t0.cronos.org/contract_verification",
+    }, 
     zkSyncTestnet: {
       url: "https://zksync2-testnet.zksync.dev",
       ethNetwork: "goerli",
